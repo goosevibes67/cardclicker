@@ -69,6 +69,16 @@ def scan():
     return [target for _, target in targets], frame, mask
 
 
+def draw_targets(frame, targets):
+    offset_x, offset_y = (SCAN_REGION[:2] if SCAN_REGION else (0, 0))
+    for cx, cy, x, y, w, h in targets:
+        top_left = (x - offset_x, y - offset_y)
+        bottom_right = (top_left[0] + w, top_left[1] + h)
+        center = (cx - offset_x, cy - offset_y)
+        cv2.rectangle(frame, top_left, bottom_right, (0, 255, 0), 2)
+        cv2.circle(frame, center, 5, (0, 0, 255), -1)
+
+
 def debug_once():
     win = "Debug: screen (green box = would click) - 'q' to quit, click to sample HSV"
     cv2.namedWindow(win, cv2.WINDOW_NORMAL)
@@ -88,9 +98,7 @@ def debug_once():
     while True:
         targets, frame, mask = scan()
         last_frame["hsv"] = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
-        for cx, cy, x, y, w, h in targets:
-            cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
-            cv2.circle(frame, (cx, cy), 5, (0, 0, 255), -1)
+        draw_targets(frame, targets)
         print(f"Found {len(targets)} match(es): {[(cx, cy) for cx, cy, *_ in targets]}")
         cv2.imshow(win, frame)
         cv2.imshow("Debug: mask", mask)
@@ -112,10 +120,12 @@ class AutoClickerGUI:
         ttk.Label(controls, textvariable=self.status).pack(side="left", padx=8)
         previews = ttk.Frame(self.root, padding=8)
         previews.pack()
+        ttk.Label(previews, text="Screen (green box = target)").grid(row=0, column=0)
+        ttk.Label(previews, text="Color mask").grid(row=0, column=1)
         self.screen = ttk.Label(previews, text="Screen preview")
-        self.screen.grid(row=0, column=0, padx=4)
+        self.screen.grid(row=1, column=0, padx=4)
         self.mask = ttk.Label(previews, text="Color mask")
-        self.mask.grid(row=0, column=1, padx=4)
+        self.mask.grid(row=1, column=1, padx=4)
         self.root.protocol("WM_DELETE_WINDOW", self.close)
 
     def start(self):
@@ -139,17 +149,15 @@ class AutoClickerGUI:
         self.root.update()
         try:
             targets, frame, mask = scan()
-            for cx, cy, x, y, w, h in targets:
-                cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
-                cv2.circle(frame, (cx, cy), 5, (0, 0, 255), -1)
+            draw_targets(frame, targets)
             if targets:
                 cx, cy, *_ = targets[0]
                 x = cx + random.randint(-CLICK_JITTER_PX, CLICK_JITTER_PX)
                 y = cy + random.randint(-CLICK_JITTER_PX, CLICK_JITTER_PX)
                 pyautogui.click(x, y)
-                message = f"Clicked ({x}, {y})"
+                message = f"{len(targets)} match(es) · clicked ({x}, {y})"
             else:
-                message = "No match found"
+                message = "No match found · no click"
         except Exception as error:
             self.running = False
             self.status.set(f"Scan failed: {error}")

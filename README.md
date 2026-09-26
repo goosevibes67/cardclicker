@@ -1,78 +1,52 @@
-# auto-clicker
+# Auto Clicker
 
-A small color-based auto-clicker for Windows. Every 10 seconds it takes a
-screenshot, looks for the largest blob matching a target color, and clicks
-its center once.
+A small Windows utility that looks for a target color on screen and clicks the center of the largest matching area.
 
 ## Setup
 
-```
-pip install -r requirements.txt
+Install Python 3, then install the dependencies:
+
+```powershell
+python -m pip install -r requirements.txt
 ```
 
-## Usage
+## Run
 
-Run it to open the GUI:
+Open the GUI:
 
-```
+```powershell
 python auto_clicker.py
 ```
 
-Click **Start** to scan immediately, then once every 10 seconds. Each preview refresh corresponds to one real screenshot and click attempt. The window briefly hides during capture so it won't detect its own preview. Click **Stop** to stop scanning.
+Click **Start** to scan immediately. The app takes one screenshot, clicks at most once, updates both previews, and repeats after 10 seconds. **Stop** pauses the loop. The window briefly hides during each scan so it cannot detect its own preview. It starts stopped.
 
-### Debug mode
+The screen preview marks detected targets with green boxes and red center dots. The mask preview shows which pixels passed the color filter. The status line reports the match count and click result.
 
-```
+## Debug preview
+
+```powershell
 python auto_clicker.py --debug
 ```
 
-Opens two live preview windows for fast color tuning:
+Debug mode opens a screen preview and a black-and-white color mask. It refreshes every 0.5 seconds and never clicks. Click the screen preview to print the sampled pixel's HSV value; press `q` to close the windows.
 
-- **screen** — the screen with a green box drawn around anything that
-  would currently be clicked.
-- **mask** — the raw black/white result of the color filter, with no
-  boxes, so you can see exactly what is and isn't passing.
+## How detection works
 
-Both rescan every ~0.5 seconds so you can watch it live. This is faster
-than the GUI's real 10s scan interval. Click anywhere on the **screen** window to print that
-pixel's HSV value to the console — useful for figuring out why something
-unexpected is (or isn't) being detected. Press `q` to close both windows.
+1. Capture the screen and convert it from RGB to HSV.
+2. Keep pixels inside the configured HSV range; clean small specks and gaps with OpenCV morphology filters.
+3. Find connected color regions and ignore anything smaller than `MIN_BLOB_AREA`.
+4. Sort matches by area, then click the center of the largest match with up to 3 pixels of jitter. If nothing matches, the app does not click.
 
-## How it works
+## Settings
 
-1. **Screenshot → HSV.** `pyautogui.screenshot()` grabs the screen. Matching
-   is done in HSV (Hue/Saturation/Value) rather than RGB, since HSV
-   separates *what color it is* from *how bright/washed-out it is*, which
-   makes matching robust to small lighting/compression differences.
-2. **Color mask.** `cv2.inRange()` turns the screenshot into black/white:
-   white wherever a pixel falls inside `PINK_LOWER`–`PINK_UPPER`, black
-   everywhere else. A couple of `cv2.morphologyEx` passes clean up the
-   mask — removing small stray specks and filling small gaps so a real
-   target reads as one solid blob.
-3. **Find blobs.** `cv2.findContours` traces every white region. Anything
-   under `MIN_BLOB_AREA` is discarded as noise; for what's left,
-   `cv2.moments` gives the centroid (the click point).
-4. **Click.** Once per 10-second round, the largest match found gets
-   clicked, with a small random pixel offset (`CLICK_JITTER_PX`) so clicks
-   aren't pixel-identical every time.
+Edit the constants near the top of `auto_clicker.py`:
 
-## Configuration
-
-All of these are constants near the top of `auto_clicker.py`:
-
-| Constant | Meaning |
+| Setting | Purpose |
 |---|---|
-| `PINK_LOWER` / `PINK_UPPER` | HSV range to match. Use `--debug` and click a pixel to read off its HSV, then adjust. |
-| `MIN_BLOB_AREA` | Minimum pixel area for a match to count. |
-| `SCAN_REGION` | `(left, top, width, height)` to limit the screenshot area, or `None` for the full screen. Narrowing this is the biggest performance win if scanning ever feels slow. |
-| `CHECK_INTERVAL` | Seconds between screenshots (default `10.0`). |
-| `CLICK_JITTER_PX` | Max random pixel offset applied to each click. |
+| `PINK_LOWER`, `PINK_UPPER` | HSV range to detect. Use debug mode to sample a pixel. |
+| `MIN_BLOB_AREA` | Minimum matching area in pixels. |
+| `SCAN_REGION` | Optional `(left, top, width, height)` crop; `None` scans the full screen. |
+| `CHECK_INTERVAL` | Seconds between GUI scans; default is 10. |
+| `CLICK_JITTER_PX` | Maximum random offset from the detected center. |
 
-## Notes
-
-- Windows only, due to `pyautogui`'s coordinate/click handling assumptions
-  used here (screenshotting itself is cross-platform).
-- Only meant for clicking your own fixed on-screen targets (e.g. a
-  recurring banner/prompt) — it has no image recognition beyond flat color
-  matching, so it isn't suited to distinguishing similarly-colored but
-  different UI elements.
+PyAutoGUI's corner fail-safe remains enabled: move the pointer to the upper-left corner to interrupt a click operation. Use this only with targets you intend to click; color matching can also detect unrelated areas with similar colors.
