@@ -1,52 +1,58 @@
-# Auto Clicker
+# Card Clicker
 
-A small Windows utility that looks for a target color on screen and clicks the center of the largest matching area.
+A Windows color-based auto-clicker. A ready-to-run package is built as one ZIP containing a standalone app; end users do not need Python or a command prompt.
 
-## Setup
+## Use the packaged app
 
-Install Python 3, then install the dependencies:
+The ready-to-run package is `Auto Clicker.zip`. The build script below creates it in `release`; attach that ZIP to a GitHub Release to publish it on the [Releases page](https://github.com/goosevibes67/cardclicker/releases). Then follow the included `QUICK_START.txt`:
+
+1. Extract the ZIP and open the extracted `Auto Clicker` folder.
+2. Double-click `Create Desktop Shortcut.vbs` to create `Auto Clicker.lnk`.
+3. Drag `Auto Clicker.lnk` to the Desktop.
+4. Double-click the Desktop shortcut.
+
+The app opens stopped. Click **Start** to scan immediately, click at most one target, update both previews, and repeat after 10 seconds. Click **Stop** to pause. The GUI briefly hides during each capture so it won't detect its own preview.
+
+## Run from source
+
+Use this section only if you want to run or edit the Python code. The source download is not the ready-to-run app.
+
+1. Install Python 3 for Windows.
+2. Open the project folder in File Explorer. Click its address bar, type `powershell`, and press Enter. This opens PowerShell in the project folder.
+3. Install dependencies:
+
+   ```powershell
+   python -m pip install -r requirements.txt
+   ```
+
+4. Run the GUI:
+
+   ```powershell
+   python auto_clicker.py
+   ```
+
+For a fast preview that never clicks, run `python auto_clicker.py --debug`. It refreshes about twice per second. Click the screen preview to print a pixel's HSV value; press `q` to close it.
+
+## Build the ZIP
+
+From PowerShell opened in the project folder, run:
 
 ```powershell
-python -m pip install -r requirements.txt
+.\package_release.ps1
 ```
 
-## Run
+The script creates `release\Auto Clicker.zip`. It installs its pinned build tool and app dependencies into a temporary environment, then packages the app as a single Windows executable. The ZIP is build output; attach it to a GitHub Release for end-user downloads. Do not use **Code > Download ZIP** as the app download; that contains source code only.
 
-Open the GUI:
-
-```powershell
-python auto_clicker.py
-```
-
-Click **Start** to scan immediately. The app takes one screenshot, clicks at most once, updates both previews, and repeats after 10 seconds. **Stop** pauses the loop. The window briefly hides during each scan so it cannot detect its own preview. It starts stopped.
-
-The screen preview marks detected targets with green boxes and red center dots. The mask preview shows which pixels passed the color filter. The status line reports the match count and click result.
-
-## Debug preview
-
-```powershell
-python auto_clicker.py --debug
-```
-
-Debug mode opens a screen preview and a black-and-white color mask. It refreshes every 0.5 seconds and never clicks. Click the screen preview to print the sampled pixel's HSV value; press `q` to close the windows.
-
-## How detection works
-
-1. Capture the screen and convert it from RGB to HSV.
-2. Keep pixels inside the configured HSV range; clean small specks and gaps with OpenCV morphology filters.
-3. Find connected color regions and ignore anything smaller than `MIN_BLOB_AREA`.
-4. Sort matches by area, then click the center of the largest match with up to 3 pixels of jitter. If nothing matches, the app does not click.
-
-## Settings
+## Detection settings
 
 Edit the constants near the top of `auto_clicker.py`:
 
 | Setting | Purpose |
 |---|---|
-| `PINK_LOWER`, `PINK_UPPER` | HSV range to detect. Use debug mode to sample a pixel. |
+| `PINK_LOWER`, `PINK_UPPER` | HSV color range. Use debug mode to sample a pixel. |
 | `MIN_BLOB_AREA` | Minimum matching area in pixels. |
 | `SCAN_REGION` | Optional `(left, top, width, height)` crop; `None` scans the full screen. |
 | `CHECK_INTERVAL` | Seconds between GUI scans; default is 10. |
 | `CLICK_JITTER_PX` | Maximum random offset from the detected center. |
 
-PyAutoGUI's corner fail-safe remains enabled: move the pointer to the upper-left corner to interrupt a click operation. Use this only with targets you intend to click; color matching can also detect unrelated areas with similar colors.
+Each screenshot is converted to HSV, filtered to the chosen color, and cleaned to remove specks and fill small gaps. Small regions are ignored; the largest remaining region is clicked at its center with a small random offset. No match means no click. PyAutoGUI's upper-left-corner fail-safe remains enabled.

@@ -1,0 +1,18 @@
+AUTO CLICKER — QUICK START
+
+1. Right-click Auto Clicker.zip and choose Extract All. Click Extract.
+2. Open the extracted Auto Clicker folder.
+3. Double-click Create Desktop Shortcut.vbs. This creates Auto Clicker.lnk
+   in the same folder.
+4. Drag Auto Clicker.lnk to your Desktop.
+5. Double-click the Desktop shortcut to open the app.
+
+Keep the extracted Auto Clicker folder where it is. The Desktop shortcut
+points to the app inside that folder. If you move the folder, create a new
+shortcut from Auto Clicker.exe.
+
+The app starts stopped. Click Start to scan and click at most one target
+immediately, then repeat every 10 seconds. Click Stop to pause. The screen
+preview marks detected targets; the mask preview shows matching pixels.
+
+No Python, pip, Command Prompt, or installation is needed for this package.
