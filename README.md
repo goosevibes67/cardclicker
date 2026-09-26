@@ -1,58 +1,42 @@
 # Card Clicker
 
-A Windows color-based auto-clicker. A ready-to-run package is built as one ZIP containing a standalone app; end users do not need Python or a command prompt.
+A Windows desktop helper for NoPixel card giveaways on Twitch. It drives a dedicated Microsoft Edge profile and reads the giveaway widget in Twitch's page frames, so it does not install or require a browser extension. It can watch open channel tabs, attempt to join when the giveaway button appears, confirm joins from the server response or overlay, track likely win/loss text, and try to dismiss the ended giveaway panel.
 
-## Use the packaged app
+## Download and run
 
-The ready-to-run package is `Auto Clicker.zip`. The build script below creates it in `release`; attach that ZIP to a GitHub Release to publish it on the [Releases page](https://github.com/goosevibes67/cardclicker/releases). Then follow the included `QUICK_START.txt`:
+Download **NoPixel Giveaway Clicker.zip** from the repository's [Releases page](https://github.com/goosevibes67/cardclicker/releases), extract it, run **Create Desktop Shortcut.vbs**, and drag the shortcut it creates to your Desktop. Keep the extracted folder in place. Launch the shortcut, click **Open Edge**, and sign in to Twitch in the new Edge profile. This profile is separate from your normal Edge profile and is kept on your computer. Add channel names in the app and click **Open channels**, then **Start monitoring**.
 
-1. Extract the ZIP and open the extracted `Auto Clicker` folder.
-2. Double-click `Create Desktop Shortcut.vbs` to create `Auto Clicker.lnk`.
-3. Drag `Auto Clicker.lnk` to the Desktop.
-4. Double-click the Desktop shortcut.
+Keep Edge open and signed in while monitoring. You can also open channel tabs manually in that Edge window. The app only monitors Twitch channel pages that are open in its dedicated Edge profile. The optional background-tab wake feature briefly brings each monitored page forward; it is off by default.
 
-The app opens stopped. Click **Start** to scan immediately, click at most one target, update both previews, and repeat after 10 seconds. Click **Stop** to pause. The GUI briefly hides during each capture so it won't detect its own preview.
+## What the app can and cannot tell
+
+- A successful `POST /channel/giveaway/join` response is counted as a confirmed join. A visible “giveaway joined” overlay is also used as fallback confirmation.
+- A 401 response triggers a rate-limited reload of the NoPixel overlay to refresh its session.
+- Win/loss counts are inferred from visible giveaway wording. Treat “possible win” as a prompt to check the stream; wording can change.
+- Activity and per-channel counts are stored locally under `%LOCALAPPDATA%\CardClicker`.
+- The app does not read or display Twitch passwords or extract tokens. Twitch sign-in happens in Edge.
+
+This is an independent community project, not affiliated with Twitch or NoPixel. Check the giveaway and platform rules before using automation.
 
 ## Run from source
 
-Use this section only if you want to run or edit the Python code. The source download is not the ready-to-run app.
+Install Python 3.10 or newer, open PowerShell in the project folder, then run:
 
-1. Install Python 3 for Windows.
-2. Open the project folder in File Explorer. Click its address bar, type `powershell`, and press Enter. This opens PowerShell in the project folder.
-3. Install dependencies:
+```powershell
+python -m pip install -r requirements.txt
+python auto_clicker.py
+```
 
-   ```powershell
-   python -m pip install -r requirements.txt
-   ```
+Microsoft Edge must be installed. The first app launch creates its dedicated Edge profile under `%LOCALAPPDATA%\CardClicker\EdgeProfile`; sign into Twitch there once. No separate Playwright browser download is needed.
 
-4. Run the GUI:
+The former color-based desktop clicker is preserved as `color_clicker.py`. To run it from source, install `requirements-color-clicker.txt` and run `python color_clicker.py`.
 
-   ```powershell
-   python auto_clicker.py
-   ```
+## Build a release package
 
-For a fast preview that never clicks, run `python auto_clicker.py --debug`. It refreshes about twice per second. Click the screen preview to print a pixel's HSV value; press `q` to close it.
-
-## Build the ZIP
-
-From PowerShell opened in the project folder, run:
+From PowerShell in the project folder, run:
 
 ```powershell
 .\package_release.ps1
 ```
 
-The script creates `release\Auto Clicker.zip`. It installs its pinned build tool and app dependencies into a temporary environment, then packages the app as a single Windows executable. The ZIP is build output; attach it to a GitHub Release for end-user downloads. Do not use **Code > Download ZIP** as the app download; that contains source code only.
-
-## Detection settings
-
-Edit the constants near the top of `auto_clicker.py`:
-
-| Setting | Purpose |
-|---|---|
-| `PINK_LOWER`, `PINK_UPPER` | HSV color range. Use debug mode to sample a pixel. |
-| `MIN_BLOB_AREA` | Minimum matching area in pixels. |
-| `SCAN_REGION` | Optional `(left, top, width, height)` crop; `None` scans the full screen. |
-| `CHECK_INTERVAL` | Seconds between GUI scans; default is 10. |
-| `CLICK_JITTER_PX` | Maximum random offset from the detected center. |
-
-Each screenshot is converted to HSV, filtered to the chosen color, and cleaned to remove specks and fill small gaps. Small regions are ignored; the largest remaining region is clicked at its center with a small random offset. No match means no click. PyAutoGUI's upper-left-corner fail-safe remains enabled.
+This builds `release\NoPixel Giveaway Clicker.zip`, which is the ready-to-run app package. Attach that ZIP to a GitHub Release. **Code → Download ZIP** contains source code, not the app.

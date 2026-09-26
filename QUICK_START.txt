@@ -1,18 +1,20 @@
-AUTO CLICKER — QUICK START
+NOPIXEL GIVEAWAY CLICKER — QUICK START
 
-1. Right-click Auto Clicker.zip and choose Extract All. Click Extract.
-2. Open the extracted Auto Clicker folder.
-3. Double-click Create Desktop Shortcut.vbs. This creates Auto Clicker.lnk
-   in the same folder.
-4. Drag Auto Clicker.lnk to your Desktop.
-5. Double-click the Desktop shortcut to open the app.
+1. Extract the downloaded ZIP.
+2. Run Create Desktop Shortcut.vbs in the extracted folder.
+3. Drag NoPixel Giveaway Clicker.lnk to your Desktop.
+4. Open the app with the shortcut, then click Open Edge.
+5. Sign into Twitch in the new Edge window. This is the app's separate
+   browser profile; your regular Edge profile is not used.
+6. Enter Twitch channel names (comma or space separated) and click Open
+   channels. You can also open channels manually in that Edge window.
+7. Click Start monitoring.
 
-Keep the extracted Auto Clicker folder where it is. The Desktop shortcut
-points to the app inside that folder. If you move the folder, create a new
-shortcut from Auto Clicker.exe.
+Stop pauses giveaway monitoring. Wake tabs now briefly brings background
+channel tabs forward. Periodic wake is optional and off by default.
 
-The app starts stopped. Click Start to scan and click at most one target
-immediately, then repeat every 10 seconds. Click Stop to pause. The screen
-preview marks detected targets; the mask preview shows matching pixels.
+Keep the app and its Edge window open. Your sign-in, channel counts, and app
+profile are stored locally under %LOCALAPPDATA%\CardClicker.
 
-No Python, pip, Command Prompt, or installation is needed for this package.
+Microsoft Edge is required. No browser extension, Python, or Command Prompt
+is required for this package. For details, see README.md.
