@@ -9,18 +9,23 @@ matching a target color, and clicks its center once.
             would click. Click the "screen" window to print that
             pixel's HSV to the console. Press 'q' to quit.
 
+Default mode opens a GUI. Start scans immediately, then once every 10s;
+the screen preview updates from those same scans. Stop pauses the loop.
+
 SETUP
   pip install -r requirements.txt
 
-Ctrl+C to stop.
+Use the GUI's Stop button to pause.
 """
 
 import sys
-import time
 import random
 import numpy as np
 import cv2
 import pyautogui
+import tkinter as tk
+from tkinter import ttk
+from PIL import Image, ImageTk
 
 # ---- COLOR RANGE (HSV) ----
 # Target color: #fb3f7c -> RGB (251, 63, 124) -> HSV (170, 191, 251).
@@ -59,8 +64,9 @@ def scan():
         x, y, w, h = cv2.boundingRect(c)
         cx = int(M["m10"] / M["m00"]) + offset_x
         cy = int(M["m01"] / M["m00"]) + offset_y
-        targets.append((cx, cy, x + offset_x, y + offset_y, w, h))
-    return targets, frame, mask
+        targets.append((cv2.contourArea(c), (cx, cy, x + offset_x, y + offset_y, w, h)))
+    targets.sort(key=lambda item: item[0], reverse=True)
+    return [target for _, target in targets], frame, mask
 
 
 def debug_once():
@@ -93,25 +99,89 @@ def debug_once():
     cv2.destroyAllWindows()
 
 
-def main():
-    print("Running. Ctrl+C to stop.")
-    while True:
-        targets, _, _ = scan()
-        if targets:
-            cx, cy, *_ = targets[0]
-            x = cx + random.randint(-CLICK_JITTER_PX, CLICK_JITTER_PX)
-            y = cy + random.randint(-CLICK_JITTER_PX, CLICK_JITTER_PX)
-            pyautogui.click(x, y)
-            print(f"Clicked ({x}, {y})")
+class AutoClickerGUI:
+    def __init__(self):
+        self.root = tk.Tk()
+        self.root.title("Auto Clicker")
+        self.running, self.next_scan = False, None
+        self.status = tk.StringVar(value="Stopped")
+        controls = ttk.Frame(self.root, padding=8)
+        controls.pack(fill="x")
+        ttk.Button(controls, text="Start", command=self.start).pack(side="left")
+        ttk.Button(controls, text="Stop", command=self.stop).pack(side="left", padx=6)
+        ttk.Label(controls, textvariable=self.status).pack(side="left", padx=8)
+        previews = ttk.Frame(self.root, padding=8)
+        previews.pack()
+        self.screen = ttk.Label(previews, text="Screen preview")
+        self.screen.grid(row=0, column=0, padx=4)
+        self.mask = ttk.Label(previews, text="Color mask")
+        self.mask.grid(row=0, column=1, padx=4)
+        self.root.protocol("WM_DELETE_WINDOW", self.close)
 
-        time.sleep(CHECK_INTERVAL)
+    def start(self):
+        if not self.running:
+            self.running = True
+            self.scan_now()
+
+    def stop(self):
+        self.running = False
+        if self.next_scan:
+            self.root.after_cancel(self.next_scan)
+            self.next_scan = None
+        self.status.set("Stopped")
+
+    def scan_now(self):
+        if not self.running:
+            return
+        self.status.set("Scanning…")
+        self.root.update_idletasks()
+        self.root.withdraw()
+        self.root.update()
+        try:
+            targets, frame, mask = scan()
+            for cx, cy, x, y, w, h in targets:
+                cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
+                cv2.circle(frame, (cx, cy), 5, (0, 0, 255), -1)
+            if targets:
+                cx, cy, *_ = targets[0]
+                x = cx + random.randint(-CLICK_JITTER_PX, CLICK_JITTER_PX)
+                y = cy + random.randint(-CLICK_JITTER_PX, CLICK_JITTER_PX)
+                pyautogui.click(x, y)
+                message = f"Clicked ({x}, {y})"
+            else:
+                message = "No match found"
+        except Exception as error:
+            self.running = False
+            self.status.set(f"Scan failed: {error}")
+            return
+        finally:
+            self.root.deiconify()
+        self.show_preview(self.screen, frame, True, 640, 360)
+        self.show_preview(self.mask, mask, False, 360, 360)
+        self.status.set(f"{message} · next scan in {CHECK_INTERVAL:g}s")
+        self.next_scan = self.root.after(int(CHECK_INTERVAL * 1000), self.scan_now)
+
+    @staticmethod
+    def show_preview(label, image, color, max_width, max_height):
+        height, width = image.shape[:2]
+        scale = min(max_width / width, max_height / height)
+        size = (int(width * scale), int(height * scale))
+        if color:
+            image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+        photo = ImageTk.PhotoImage(Image.fromarray(cv2.resize(image, size)))
+        label.configure(image=photo, text="")
+        label.image = photo
+
+    def close(self):
+        self.stop()
+        self.root.destroy()
+
+    def run(self):
+        self.root.mainloop()
 
 
 if __name__ == "__main__":
     if "--debug" in sys.argv:
         debug_once()
     else:
-        try:
-            main()
-        except KeyboardInterrupt:
-            print("Stopped.")
+        AutoClickerGUI().run()

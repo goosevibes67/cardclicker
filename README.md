@@ -12,13 +12,13 @@ pip install -r requirements.txt
 
 ## Usage
 
-Run it:
+Run it to open the GUI:
 
 ```
 python auto_clicker.py
 ```
 
-Press `Ctrl+C` to stop.
+Click **Start** to scan immediately, then once every 10 seconds. Each preview refresh corresponds to one real screenshot and click attempt. The window briefly hides during capture so it won't detect its own preview. Click **Stop** to stop scanning.
 
 ### Debug mode
 
@@ -26,16 +26,15 @@ Press `Ctrl+C` to stop.
 python auto_clicker.py --debug
 ```
 
-Opens two live preview windows:
+Opens two live preview windows for fast color tuning:
 
 - **screen** — the screen with a green box drawn around anything that
   would currently be clicked.
 - **mask** — the raw black/white result of the color filter, with no
   boxes, so you can see exactly what is and isn't passing.
 
-Both rescan every ~0.5 seconds so you can watch it live (this is faster
-than the real 10s interval — it's just for tuning, not a preview of the
-real click timing). Click anywhere on the **screen** window to print that
+Both rescan every ~0.5 seconds so you can watch it live. This is faster
+than the GUI's real 10s scan interval. Click anywhere on the **screen** window to print that
 pixel's HSV value to the console — useful for figuring out why something
 unexpected is (or isn't) being detected. Press `q` to close both windows.
 
